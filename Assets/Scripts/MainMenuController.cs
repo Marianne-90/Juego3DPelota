@@ -1,16 +1,18 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Controla la navegación desde el menú principal hacia la escena de juego.
 /// </summary>
 public class MainMenuController : MonoBehaviour
 {
-    [SerializeField] private string gameSceneName = "Game";
+    [FormerlySerializedAs("gameSceneName")]
+    [SerializeField] private string nombreEscenaJuego = "Game";
 
     public void JugarPartida()
     {
-        SceneManager.LoadScene(gameSceneName);
+        SceneManager.LoadScene(nombreEscenaJuego);
     }
 
     public void SalirDelJuego()

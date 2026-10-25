@@ -144,7 +144,7 @@ public static class Task1SceneSetup
 
         CameraFollow cameraFollow = cameraObject.AddComponent<CameraFollow>();
         SerializedObject serializedCamera = new SerializedObject(cameraFollow);
-        serializedCamera.FindProperty("target").objectReferenceValue = ball.transform;
+        serializedCamera.FindProperty("objetivo").objectReferenceValue = ball.transform;
         serializedCamera.ApplyModifiedPropertiesWithoutUndo();
 
         cameraObject.transform.LookAt(ball.transform);
@@ -174,7 +174,7 @@ public static class Task1SceneSetup
         GameObject scoreTextObject = new GameObject("ScoreText", typeof(Text));
         scoreTextObject.transform.SetParent(canvasObject.transform, false);
         Text scoreText = scoreTextObject.GetComponent<Text>();
-        scoreText.text = "Score: 0";
+        scoreText.text = "Puntaje: 0";
         scoreText.font = GetBuiltinFont();
         scoreText.fontSize = 64;
         scoreText.alignment = TextAnchor.UpperCenter;

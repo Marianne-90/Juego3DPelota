@@ -73,6 +73,7 @@ public static class Task1ScreenshotCapture
         RenderTexture previousActive = RenderTexture.active;
 
         camera.targetTexture = rt;
+        camera.Render(); // primer frame tras abrir la escena: iluminación/shaders aún sin terminar de inicializarse, se descarta
         camera.Render();
 
         RenderTexture.active = rt;

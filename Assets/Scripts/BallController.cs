@@ -1,30 +1,43 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
-/// Mueve a la pelota en los ejes X y Z a partir del arrastre del dedo (o del mouse en el editor).
-/// El eje Y queda a cargo de la física (gravedad + rebote mediante el Physic Material).
+/// Mueve a la pelota en los ejes X y Z a partir del arrastre del dedo (o del mouse en el editor),
+/// mientras desciende de forma continua en el eje Y a una velocidad controlada por el sistema de
+/// puntaje (<see cref="ScoreManager"/>), en vez de depender únicamente de la gravedad.
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class BallController : MonoBehaviour
 {
     [Header("Sensibilidad del arrastre")]
     [Tooltip("Qué tan rápido responde la pelota al arrastre del dedo/mouse.")]
-    [SerializeField] private float dragSensitivity = 0.02f;
+    [FormerlySerializedAs("dragSensitivity")]
+    [SerializeField] private float sensibilidadArrastre = 0.02f;
 
     [Tooltip("Velocidad horizontal máxima permitida (unidades/segundo).")]
-    [SerializeField] private float maxHorizontalSpeed = 6f;
+    [FormerlySerializedAs("maxHorizontalSpeed")]
+    [SerializeField] private float velocidadHorizontalMaxima = 6f;
 
     [Header("Límites del escenario")]
     [Tooltip("Distancia máxima permitida desde el centro de la plataforma en X/Z.")]
-    [SerializeField] private float horizontalBounds = 4f;
+    [FormerlySerializedAs("horizontalBounds")]
+    [SerializeField] private float limiteHorizontal = 4f;
+
+    [Header("Descenso")]
+    [Tooltip("Velocidad de caída inicial (unidades/segundo), antes de aplicar la curva de dificultad.")]
+    [FormerlySerializedAs("initialFallSpeed")]
+    [SerializeField] private float velocidadCaidaInicial = 2.5f;
 
     private Rigidbody _rigidbody;
     private Vector2 _lastInputPosition;
     private bool _isDragging;
+    private float _currentFallSpeed;
 
     private void Awake()
     {
         _rigidbody = GetComponent<Rigidbody>();
+        _rigidbody.useGravity = false;
+        _currentFallSpeed = velocidadCaidaInicial;
     }
 
     private void Update()
@@ -86,21 +99,44 @@ public class BallController : MonoBehaviour
     {
         // La X de pantalla mueve al personaje en X del mundo;
         // la Y de pantalla (arriba/abajo del dedo) mueve al personaje en Z del mundo.
-        Vector3 worldDelta = new Vector3(screenDelta.x, 0f, screenDelta.y) * dragSensitivity;
+        Vector3 worldDelta = new Vector3(screenDelta.x, 0f, screenDelta.y) * sensibilidadArrastre;
         Vector3 targetVelocity = worldDelta / Time.deltaTime;
 
-        targetVelocity.x = Mathf.Clamp(targetVelocity.x, -maxHorizontalSpeed, maxHorizontalSpeed);
-        targetVelocity.z = Mathf.Clamp(targetVelocity.z, -maxHorizontalSpeed, maxHorizontalSpeed);
+        targetVelocity.x = Mathf.Clamp(targetVelocity.x, -velocidadHorizontalMaxima, velocidadHorizontalMaxima);
+        targetVelocity.z = Mathf.Clamp(targetVelocity.z, -velocidadHorizontalMaxima, velocidadHorizontalMaxima);
 
         _rigidbody.linearVelocity = new Vector3(targetVelocity.x, _rigidbody.linearVelocity.y, targetVelocity.z);
+    }
+
+    private void FixedUpdate()
+    {
+        // El descenso es continuo y controlado por código (no por gravedad), para que el
+        // ScoreManager pueda acelerarlo progresivamente a través de SetFallSpeed.
+        Vector3 velocity = _rigidbody.linearVelocity;
+        velocity.y = -_currentFallSpeed;
+        _rigidbody.linearVelocity = velocity;
     }
 
     private void LateUpdate()
     {
         // Mantiene a la pelota dentro de los límites de la plataforma en X/Z.
         Vector3 position = transform.position;
-        position.x = Mathf.Clamp(position.x, -horizontalBounds, horizontalBounds);
-        position.z = Mathf.Clamp(position.z, -horizontalBounds, horizontalBounds);
+        position.x = Mathf.Clamp(position.x, -limiteHorizontal, limiteHorizontal);
+        position.z = Mathf.Clamp(position.z, -limiteHorizontal, limiteHorizontal);
         transform.position = position;
+    }
+
+    /// <summary>Actualiza la velocidad de caída actual (curva de dificultad progresiva).</summary>
+    public void SetFallSpeed(float fallSpeed)
+    {
+        _currentFallSpeed = fallSpeed;
+    }
+
+    /// <summary>Reubica a la pelota (fin de partida) y detiene su velocidad acumulada.</summary>
+    public void ResetTo(Vector3 position)
+    {
+        transform.position = position;
+        _rigidbody.linearVelocity = Vector3.zero;
+        _currentFallSpeed = velocidadCaidaInicial;
     }
 }
